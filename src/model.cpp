@@ -5,6 +5,8 @@
 #include <vector>
 #include "model.h"
 
+//Ce parseur ne fonctionne que sur les fichiers .obj dont les vecteurs sont définis par trois paramètres, avec la texture et le vecteur normal (v/vt/vn)
+
 Model::Model(const char *filename) : verts_(), faces_() {
     std::ifstream in;
     in.open (filename, std::ifstream::in);
