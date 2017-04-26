@@ -138,7 +138,7 @@ void triangleFull(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, TGAColor color)
 }
 
 //Dessine un triangle plein en utilisant un zbuffer pour savoir ce qui est au premier plan + textures
-void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, Vec2f* UVs, TGAImage& image){
+void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, Vec2f* UVs, float ecl, TGAImage& image){
 
   TGAColor color;
   
@@ -183,7 +183,7 @@ void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, Vec2f* UV
       int idx = j+i*width;
       if (zBuffer[idx]<z) {
 	zBuffer[idx] = z;
-	image.set(j, i, color);
+	image.set(j, i, color*ecl);
       }
     }
   }
@@ -223,7 +223,7 @@ void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, Vec2f* UV
       int idx = j+i*width;
       if (zBuffer[idx]<z) {
 	zBuffer[idx] = z;
-	image.set(j, i, color);
+	image.set(j, i, color*ecl);
       }
     }
   }
@@ -313,7 +313,7 @@ void model3dZbuffer(Model* model, TGAImage& image){
 
     float intens = normal*light_dir;
     if (intens > 0){
-      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs, image);
+      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs,intens, image);
     }
   }
 }
