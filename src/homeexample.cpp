@@ -32,6 +32,7 @@ Vec3f barycentric(Vec3f A, Vec3f B, Vec3f C, float Px, float Py) {
 }
 
 
+//Dessine une ligne entre deux points
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
   bool steep = false; 
   if (std::abs(x0-x1)<std::abs(y0-y1)) { 
@@ -62,6 +63,7 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
   } 
 }
 
+//Dessine une ligne entre deux vecteurs
 void line(Vec2i v0, Vec2i v1, TGAImage &image, TGAColor color) {
   int x0 = v0.x, y0 = v0.y;
   int x1 = v1.x, y1 = v1.y;
@@ -135,6 +137,7 @@ void triangleFull(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, TGAColor color)
   }
 }
 
+//Dessine un triangle plein en utilisant un zbuffer pour savoir ce qui est au premier plan
 void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, TGAImage& image, TGAColor color){
 
   //v0 higher than v1 higher than v2
