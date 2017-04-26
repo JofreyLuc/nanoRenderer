@@ -137,17 +137,20 @@ void triangleFull(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, TGAColor color)
   }
 }
 
-//Dessine un triangle plein en utilisant un zbuffer pour savoir ce qui est au premier plan
-void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, TGAImage& image, TGAColor color){
+//Dessine un triangle plein en utilisant un zbuffer pour savoir ce qui est au premier plan + textures
+void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, Vec2f* UVs, TGAImage& image){
 
+  TGAColor color;
+  
   //v0 higher than v1 higher than v2
-  if (v2.y>v1.y) std::swap(v2, v1);
-  if (v2.y>v0.y) std::swap(v2, v0);
-  if (v1.y>v0.y) std::swap(v1, v0);
+  if (v2.y>v1.y) { std::swap(v2, v1); std::swap(UVs[2], UVs[1]); }
+  if (v2.y>v0.y) { std::swap(v2, v0); std::swap(UVs[2], UVs[0]); }
+  if (v1.y>v0.y) { std::swap(v1, v0); std::swap(UVs[1], UVs[0]); }
 
   float totalHeight = v0.y-v2.y;
   float bottomHeight = v1.y-v2.y;
 
+  //Partie inférieure
   for (float i=v2.y; i<=v1.y; i++){
     float alpha = 0;
     if (totalHeight!=0) alpha = (float)(i-v2.y)/totalHeight; 
@@ -156,15 +159,26 @@ void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, TGAImage&
     Vec2f A = Vec2f((v2.x + (v0.x-v2.x)*alpha), i); 
     Vec2f B = Vec2f((v2.x + (v1.x-v2.x)*beta), i);
     if (A.x > B.x) std::swap(A, B);
-    for (float j=A.x; j < B.x; j++){
 
+    for (float j=A.x; j < B.x; j++){
       Vec3f bary = barycentric(v0, v1, v2, j, i);
       //rasterizing
-      if (bary.x<0 || bary.y<0 || bary.z<0) continue;
       float z = 0;
-      z += v0.y * bary.x;
-      z += v1.y * bary.y;
-      z += v2.y * bary.z;
+      z += v0.z * bary.x;
+      z += v1.z * bary.y;
+      z += v2.z * bary.z;
+
+      float u = 0;
+      u += UVs[0].x * bary.x;
+      u += UVs[1].x * bary.y;
+      u += UVs[2].x * bary.z;
+
+      float v = 0;
+      v += UVs[0].y * bary.x;
+      v += UVs[1].y * bary.y;
+      v += UVs[2].y * bary.z;
+      
+      color = model->diffuse(Vec2f(u,v));
 
       int idx = j+i*width;
       if (zBuffer[idx]<z) {
@@ -175,7 +189,8 @@ void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, TGAImage&
   }
   
   float topHeight = v0.y-v1.y;
-    
+
+  //Partie supérieure
   for (float i=v1.y; i<=v0.y; i++){
     float alpha = 0;
     if (totalHeight!=0) alpha = (float)(i-v2.y)/totalHeight; 
@@ -187,13 +202,24 @@ void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, TGAImage&
     for (float j=A.x; j < B.x; j++){
 
       Vec3f bary = barycentric(v0, v1, v2, j, i);
-      //rasterizing
-      if (bary.x<0 || bary.y<0 || bary.z<0) continue;
+      //interpolation
       float z = 0;
-      z += v0.y * bary.x;
-      z += v1.y * bary.y;
-      z += v2.y * bary.z;
+      z += v0.z * bary.x;
+      z += v1.z * bary.y;
+      z += v2.z * bary.z;
 
+      float u = 0;
+      u += UVs[0].x * bary.x;
+      u += UVs[1].x * bary.y;
+      u += UVs[2].x * bary.z;
+
+      float v = 0;
+      v += UVs[0].y * bary.x;
+      v += UVs[1].y * bary.y;
+      v += UVs[2].y * bary.z;
+      
+      color = model->diffuse(Vec2f(u,v));
+      
       int idx = j+i*width;
       if (zBuffer[idx]<z) {
 	zBuffer[idx] = z;
@@ -272,12 +298,14 @@ void model3dZbuffer(Model* model, TGAImage& image){
     std::vector<int> face = model->face(i);
     Vec3f vvisu[3];
     Vec3f vreels[3];
+    Vec2f UVs[3]; //Coordonnées texture
     //Pour les trois vecteurs du triangle
     for (int j=0; j<3; j++) {
       Vec3f vreel = model->vert(face[j]);
       //On définit les coordonnées du triangle dans l'espacex
       vvisu[j] = Vec3f(int((vreel.x+1.)*width/2.+.5), int((vreel.y+1.)*height/2.+.5), vreel.z);
       vreels[j] = vreel;
+      UVs[j] = model->uv(i, j);
     }
 
     Vec3f normal = cross((vreels[2]-vreels[0]),(vreels[1]-vreels[0]));
@@ -285,7 +313,7 @@ void model3dZbuffer(Model* model, TGAImage& image){
 
     float intens = normal*light_dir;
     if (intens > 0){
-      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, image, TGAColor(255*intens,255*intens,255*intens,255));
+      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs, image);
     }
   }
 }
