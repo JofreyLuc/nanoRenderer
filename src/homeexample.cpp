@@ -11,7 +11,7 @@ const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 const Vec3f light_dir = Vec3f(0,0,-1);
-const Vec3f camera = Vec3f(0,0,4);
+const Vec3f camera = Vec3f(0,0,3);
 Model *model = NULL;
 const int width  = 1000;
 const int height = 1000;
@@ -96,13 +96,6 @@ void line(Vec2i v0, Vec2i v1, TGAImage &image, TGAColor color) {
     } 
   } 
 } 
-
-//Draw an empty triangle
-void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, TGAColor color){
-  line(v0, v1, image, color);
-  line(v1, v2, image, color);
-  line(v2, v0, image, color);
-}
 
 //Draw a triangle filled with color
 void triangleFull(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, TGAColor color){
@@ -230,6 +223,74 @@ void triangleFullZBuffer(Vec3f v0, Vec3f v1, Vec3f v2, float* zBuffer, Vec2f* UV
   }
 }
 
+
+void model3dZbuffer(Model* model, TGAImage& image){
+  float *zbuffer = new float[width*height];
+  for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
+  
+  //Pour toutes les faces
+  for (int i=0; i<model->nfaces(); i++) { 
+    std::vector<int> face = model->face(i);
+    Vec3f vvisu[3];
+    Vec3f vreels[3];
+    Vec2f UVs[3]; //Coordonnées texture
+    float transfo_proj; //Valeur de transformation pour la projection
+    //Pour les trois vecteurs du triangle
+    for (int j=0; j<3; j++) {
+      Vec3f vreel = model->vert(face[j]);
+      //On définit les coordonnées du triangle dans l'espacex
+      vvisu[j] = Vec3f(long((vreel.x+1.)*width/2.+.5), long((vreel.y+1.)*height/2.+.5), vreel.z);
+
+      //std::cerr << vvisu[j] << std::endl;      
+      
+      //On projette pour avoir la profondeur
+      transfo_proj = 1. - vvisu[j].z / camera.z;
+      vvisu[j].x /= transfo_proj;
+      vvisu[j].y /= transfo_proj;
+      //vvisu[j].z /= transfo_proj;
+
+      //std::cerr << vvisu[j] << std::endl << std::endl;
+
+      //Pour les textures
+      vreels[j] = vreel;
+      UVs[j] = model->uv(i, j);
+    }
+
+    //Calcul vecteur normal au triangle pour intensité
+    Vec3f normal = cross((vreels[2]-vreels[0]),(vreels[1]-vreels[0]));
+    normal.normalize();
+    float intens = normal*light_dir;
+    if (intens > 0){
+      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs, intens, image);
+    }
+  }
+}
+
+
+int main(int argc, char** argv){
+  model = new Model(argv[1]);
+  TGAImage i = TGAImage(width, height, TGAImage::RGB);
+  model3dZbuffer(model, i);
+  
+  i.flip_vertically();
+  i.write_tga_file("output.tga");
+
+  delete model;
+  return 0; 
+}
+
+
+
+
+//Stuff
+
+//Draw an empty triangle
+void triangle(Vec2i v0, Vec2i v1, Vec2i v2, TGAImage& image, TGAColor color){
+  line(v0, v1, image, color);
+  line(v1, v2, image, color);
+  line(v2, v0, image, color);
+}
+
 void model3dEmptyTriangles(Model* model, TGAImage& image){
 
   //Pour toutes les faces
@@ -287,54 +348,4 @@ void model3dBasicIntensity(Model* model, TGAImage& image){
       triangleFull(vvisu[0], vvisu[1], vvisu[2], image, TGAColor(255*intens,255*intens,255*intens,255));
     }
   }
-}
-
-void model3dZbuffer(Model* model, TGAImage& image){
-  float *zbuffer = new float[width*height];
-  for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
-  
-  //Pour toutes les faces
-  for (int i=0; i<model->nfaces(); i++) { 
-    std::vector<int> face = model->face(i);
-    Vec3f vvisu[3];
-    Vec3f vreels[3];
-    Vec2f UVs[3]; //Coordonnées texture
-    float transfo_proj; //Valeur de transformation pour la projection
-    //Pour les trois vecteurs du triangle
-    for (int j=0; j<3; j++) {
-      Vec3f vreel = model->vert(face[j]);
-      //On définit les coordonnées du triangle dans l'espacex
-      vvisu[j] = Vec3f(int((vreel.x+1.)*width/2.+.5), int((vreel.y+1.)*height/2.+.5), vreel.z);
-
-      //On projette pour avoir la profondeur
-      transfo_proj = 1 - vvisu[j].z / camera.z;
-      vvisu[j].x /= transfo_proj;
-      vvisu[j].y /= transfo_proj;
-      //vvisu[j].z /= transfo_proj;
-            
-      vreels[j] = vreel;
-      UVs[j] = model->uv(i, j);
-    }
-
-    //Calcul vecteur normal au triangle pour intensité
-    Vec3f normal = cross((vreels[2]-vreels[0]),(vreels[1]-vreels[0]));
-    normal.normalize();
-    float intens = normal*light_dir;
-    if (intens > 0){
-      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs, intens, image);
-    }
-  }
-}
-
-
-int main(int argc, char** argv){
-  model = new Model(argv[1]);
-  TGAImage i = TGAImage(width, height, TGAImage::RGB);
-  model3dZbuffer(model, i);
-  
-  i.flip_vertically();
-  i.write_tga_file("output.tga");
-
-  delete model;
-  return 0; 
 }
