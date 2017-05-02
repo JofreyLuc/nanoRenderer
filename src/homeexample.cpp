@@ -11,9 +11,10 @@ const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 const Vec3f light_dir = Vec3f(0,0,-1);
+const Vec3f camera = Vec3f(0,0,4);
 Model *model = NULL;
-const int width  = 800;
-const int height = 800;
+const int width  = 1000;
+const int height = 1000;
 
 
 //Piqué dans le code / à changer
@@ -289,7 +290,6 @@ void model3dBasicIntensity(Model* model, TGAImage& image){
 }
 
 void model3dZbuffer(Model* model, TGAImage& image){
-
   float *zbuffer = new float[width*height];
   for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
   
@@ -299,21 +299,29 @@ void model3dZbuffer(Model* model, TGAImage& image){
     Vec3f vvisu[3];
     Vec3f vreels[3];
     Vec2f UVs[3]; //Coordonnées texture
+    float transfo_proj; //Valeur de transformation pour la projection
     //Pour les trois vecteurs du triangle
     for (int j=0; j<3; j++) {
       Vec3f vreel = model->vert(face[j]);
       //On définit les coordonnées du triangle dans l'espacex
       vvisu[j] = Vec3f(int((vreel.x+1.)*width/2.+.5), int((vreel.y+1.)*height/2.+.5), vreel.z);
+
+      //On projette pour avoir la profondeur
+      transfo_proj = 1 - vvisu[j].z / camera.z;
+      vvisu[j].x /= transfo_proj;
+      vvisu[j].y /= transfo_proj;
+      //vvisu[j].z /= transfo_proj;
+            
       vreels[j] = vreel;
       UVs[j] = model->uv(i, j);
     }
 
+    //Calcul vecteur normal au triangle pour intensité
     Vec3f normal = cross((vreels[2]-vreels[0]),(vreels[1]-vreels[0]));
     normal.normalize();
-
     float intens = normal*light_dir;
     if (intens > 0){
-      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs,intens, image);
+      triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs, intens, image);
     }
   }
 }

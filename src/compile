@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+make clean
+make
+if ./main ../obj/african_head/african_head.obj; then
+    gpicview output.tga
+fi
