@@ -5,25 +5,25 @@ Je me suis arrêté au shader de Gouraud car bloqué. (Débuggué pendant des he
 
 Voici les images que j'ai pu obtenir :
 
-![A peu près potable](/img/ok1.tga)
+![A peu près potable](/img/ok1.png)
 
-![A peu près potable](/img/ok2.tga)
+![A peu près potable](/img/ok2.png)
 
-![A peu près potable](/img/ok3.tga)
+![A peu près potable](/img/ok3.png)
 
 Avec le shader (six niveaux d'intensité, monochrome):
 
-![Beuh](/img/gouraud.tga)
+![Beuh](/img/gouraud.png)
 
-![Beuh](/img/gouraud_dia.tga)
+![Beuh](/img/gouraud_dia.png)
 
 (Les triangles sont bons)
 
-![Beuh](/img/gouraud_triangles.tga)
+![Beuh](/img/gouraud_triangles.png)
 
 Avec le shader + les textures :
 
-![Beuh](/img/gouraud_head_tex.tga)
+![Beuh](/img/gouraud_head_tex.png)
 
-![Beuh](/img/gouraud_dia_tex.tga)
+![Beuh](/img/gouraud_dia_tex.png)
 
