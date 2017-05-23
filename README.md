@@ -1,5 +1,6 @@
 ## tinyRenderer
 
+Code dans main.cpp et our_gl.h.
 Je me suis arrêté au shader de Gouraud car bloqué. (Débuggué pendant des heures, tout à l'air bon pourtant.)
 
 Voici les images que j'ai pu obtenir :

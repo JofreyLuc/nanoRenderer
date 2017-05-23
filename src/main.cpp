@@ -31,6 +31,7 @@ struct Gouraud_Shader : public IShader {
     return false; // On accepte tous les pixels pour le moment
     }
 
+  // Shader à six niveaux, monoschrome
   /*virtual bool fragment(Vec3f bar, TGAColor &color) {
     float intensity = varying_intensity*bar;
     //std::cerr << varying_intensity << std::endl;
@@ -45,10 +46,13 @@ struct Gouraud_Shader : public IShader {
     }*/
 };
 
+// Affiche une image avec un shader
 void model3dShaders(Model* model, TGAImage& image){
+  // Création zbuffer
   float *zbuffer = new float[width*height];
   for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
 
+  // Initialisation matrices projection
   lookat(camera, center, up);
   viewport(width/8, height/8, width*3/4, height*3/4);
   project(-1. / camera.z);
@@ -64,7 +68,7 @@ void model3dShaders(Model* model, TGAImage& image){
     //triangle(screen_coords[0],screen_coords[1],screen_coords[2], image, white);
   }
   
-  { // dump z-buffer (debugging purposes only)
+  { // Dump du zbuffer
     TGAImage zbimage(width, height, TGAImage::RGBA);
     float zbmin = 1e10, zbmax = -1e10;
     for (int i=0; i<width*height; i++) {
@@ -81,18 +85,18 @@ void model3dShaders(Model* model, TGAImage& image){
 	zbimage.set(i, j, TGAColor(z,z,z,255 ));
       }
     }
-    zbimage.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+    zbimage.flip_vertically();
     zbimage.write_tga_file("zbuffer.tga");
   }
 }
 
-
-
-
+// Affiche une image avec les texutres et un zbuffer
 void model3d(Model* model, TGAImage& image){
+  // Création zbuffer
   float *zbuffer = new float[width*height];
   for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
 
+  // Initialisation matrices projection
   lookat(camera, center, up);
   viewport(width/8, height/8, width*3/4, height*3/4);
   project(-1. / camera.z);
@@ -100,10 +104,9 @@ void model3d(Model* model, TGAImage& image){
   //Pour toutes les faces
   for (int i=0; i<model->nfaces(); i++) { 
     std::vector<int> face = model->face(i);
-    Vec3f vvisu[3];
-    Vec3f vreels[3];
+    Vec3f vvisu[3]; //Coordonnées dans l'image
+    Vec3f vreels[3]; //Coordonnées "réelles"
     Vec2f UVs[3]; //Coordonnées texture
-    float transfo_proj; //Valeur de transformation pour la projection
     //Pour les trois vecteurs du triangle
     for (int j=0; j<3; j++) {
       Vec3f vreel = model->vert(face[j]);
@@ -131,13 +134,13 @@ void model3d(Model* model, TGAImage& image){
     //Calcul vecteur normal au triangle pour intensité
     Vec3f normal = cross((vreels[2]-vreels[0]),(vreels[1]-vreels[0]));
     normal.normalize();
-    float intens = 1;//normal*light_dir;
+    float intens = normal*light_dir;
     if (intens > 0){
       triangleFullZBuffer(vvisu[0], vvisu[1], vvisu[2], zbuffer, UVs, intens, image, model);
     }
   }
   
-  { // dump z-buffer (debugging purposes only)
+  { // Dump du z-buffer
     TGAImage zbimage(width, height, TGAImage::RGBA);
     float zbmin = 1e10, zbmax = -1e10;
     for (int i=0; i<width*height; i++) {
@@ -154,7 +157,7 @@ void model3d(Model* model, TGAImage& image){
 	zbimage.set(i, j, TGAColor(z,z,z,255 ));
       }
     }
-    zbimage.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+    zbimage.flip_vertically();
     zbimage.write_tga_file("zbuffer.tga");
   }
 }
@@ -175,7 +178,7 @@ int main(int argc, char** argv){
 
 
 
-//Stuff
+//Old stuff
 
 
 /*void model3dEmptyTriangles(Model* model, TGAImage& image){
