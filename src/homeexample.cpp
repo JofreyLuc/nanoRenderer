@@ -6,15 +6,10 @@
 #include <limits>
 
 Model *model = NULL;
-const Vec3f light_dir = Vec3f(1,1,1);
+const Vec3f light_dir = Vec3f(0,0,1);
 const Vec3f camera = Vec3f(1, 1, 6);
 const Vec3f center = Vec3f(0, 0, 0);
 const Vec3f up = Vec3f(0,1,0);
-
-
-Matrix modelView;
-Matrix viewPort;
-Matrix projection;
 
 struct Gouraud_Shader : public IShader {
   Vec3f varying_intensity;
@@ -29,23 +24,34 @@ struct Gouraud_Shader : public IShader {
   }
 
   // "Intensifie" la couleur en interpolant les coords bary
-  virtual bool fragment(Vec3f bar, TGAColor &color) {
+  /*virtual bool fragment(Vec3f bar, TGAColor &color) {
     float intensity = varying_intensity*bar; // Interpol
     Vec2f uv = varying_uv*bar;               // Interpol uv
     color = model->diffuse(uv)*intensity;
     return false; // On accepte tous les pixels pour le moment
+    }*/
+
+  virtual bool fragment(Vec3f bar, TGAColor &color) {
+    float intensity = varying_intensity*bar;
+    //std::cerr << varying_intensity << std::endl;
+    if (intensity>.85) intensity = 1;
+    else if (intensity>.60) intensity = .80;
+    else if (intensity>.45) intensity = .60;
+    else if (intensity>.30) intensity = .45;
+    else if (intensity>.15) intensity = .30;
+    else intensity = 0;
+    color = TGAColor(255, 155, 0)*intensity;
+    return false;
     }
 };
-
 
 void model3dZbuffer(Model* model, TGAImage& image){
   float *zbuffer = new float[width*height];
   for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
 
-  modelView = lookat(camera, center, up);
-  viewPort = viewport(width/8, height/8, width*3/4, height*3/4);
-  projection = Matrix::identity();
-  projection[3][2] = -1. / camera.z;
+  lookat(camera, center, up);
+  viewport(width/8, height/8, width*3/4, height*3/4);
+  project(-1. / camera.z);
 
   Gouraud_Shader shader;
   //Pour toutes les faces
@@ -55,6 +61,7 @@ void model3dZbuffer(Model* model, TGAImage& image){
       screen_coords[j] = shader.vertex(i, j);
     }
     triangleShader(screen_coords[0],screen_coords[1],screen_coords[2], zbuffer, image, shader,  model);
+    triangle(screen_coords[0],screen_coords[1],screen_coords[2], image, white);
   }
   
   { // dump z-buffer (debugging purposes only)
